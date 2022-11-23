@@ -1,33 +1,24 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
+publishers = [
+    "Reuters",
+    "Huffington Post",
+    "Businessweek",
+    "Contactmusic.com",
+    "Daily Mail",
+]
+
 
 def main():
     dataset = pd.read_csv(
         "data/newsCorpora.csv",
         sep="\t",
-        names=[
-            "id",
-            "title",
-            "url",
-            "publisher",
-            "category",
-            "story",
-            "hostname",
-            "timestamp",
-        ],
+        header=None,
+        usecols=[1, 3, 4],
+        names=["title", "publisher", "category"],
     )
-    dataset = dataset[
-        dataset["publisher"].isin(
-            [
-                "Reuters",
-                "Huffington Post",
-                "Businessweek",
-                "Contactmusic.com",
-                "Daily Mail",
-            ]
-        )
-    ]
+    dataset = dataset[dataset["publisher"].isin(publishers)]
     dataset = dataset.loc[:, ["category", "title"]]
     train_dataset, dev_test_dataset = train_test_split(
         dataset,
