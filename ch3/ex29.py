@@ -1,0 +1,63 @@
+import re
+import requests
+from typing import Dict
+
+from ex20 import load_json
+from ex25 import extract_template
+from ex26 import remove_markup
+from ex27 import remove_link
+
+
+def remove_others(template: Dict[str, str]) -> Dict[str, str]:
+    # remove files
+    template = {
+        k: re.sub(r"\[\[ファイル:([^\|]+?)\|(.+?)\]\]", r"\1", v)
+        for k, v in template.items()
+    }
+    # remove refs
+    template = {
+        k: re.sub(r"<ref.+?/ref>", "", v.replace("\n", "")) for k, v in template.items()
+    }
+    template = {k: re.sub(r"<.+?/>", "", v) for k, v in template.items()}
+    template = {k: re.sub(r"\{\{([^\|]+?)\}\}", r"\1", v) for k, v in template.items()}
+    template = {
+        k: re.sub(r"\{\{[^\|]+?\|[^\|]+?\|([^\|]+?)\}\}", r"\1", v)
+        for k, v in template.items()
+    }
+    template = {
+        k: re.sub(r"\{\{[^\|]+?\|[^\|]+?\|[^\|]+?\|([^\|]+?)\}\}", r"\1", v)
+        for k, v in template.items()
+    }
+    template = {
+        k: re.sub(r"\[\[[^\|]+?\|([^\|]+?)\]\].+?$", r"\1", v)
+        for k, v in template.items()
+    }
+    return template
+
+
+def main():
+    data = load_json()
+    template = extract_template(data)
+    template = remove_markup(template)
+    template = remove_link(template)
+    template = remove_others(template)
+
+    session = requests.Session()
+    wiki_json = session.get(
+        url="https://en.wikipedia.org/w/api.php",
+        params={
+            "action": "query",
+            "format": "json",
+            "prop": "imageinfo",
+            "iiprop": "url",
+            "titles": f"File:{template['国旗画像']}",
+        },
+    ).json()
+    wiki_dict = wiki_json["query"]["pages"]
+    page_key = next(iter(wiki_dict))
+    url = wiki_dict[page_key]["imageinfo"][0]["url"]
+    print(url)
+
+
+if __name__ == "__main__":
+    main()
